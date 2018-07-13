@@ -4,7 +4,6 @@
 ### Carolyn Tarpey | June 2018 
 ### ---------------------------------------
 
-
 library(ggplot2)
 library(vcfR)
 library(stringr)
@@ -16,6 +15,7 @@ library(gridExtra)
 library(scales) 
 library(grid)
 
+### Read in the data files we will need ########
 
 #load the raw genepop file, edited for R. Includes all individuals and loci:  
 chin_raw_genepop <-read.delim("Z:/WORK/TARPEY/ChinookPanel/RAD_data/NoCookInlet/batch_13.allCombined_NoCookInlet_R_genepop.txt", sep="", header = TRUE, colClasses="factor")
@@ -26,6 +26,23 @@ chin_all_popINFO <-read.delim("Z:/WORK/TARPEY/ChinookPanel/RAD_data/NoCookInlet/
 #colnames(chin_all_popINFO) <- c("SampleName", "Population", "VeryBroadRegion", "Location", "BroadRegion", "FineReportingGroup")
 head(chin_all_popINFO)
 dim(chin_all_popINFO)
+
+#Garrett's HDPlot results for 19k loci
+HDplot_GM_results <-read.delim("Z:/WORK/TARPEY/ChinookPanel/Chinook_HDplotResults.txt", header =TRUE)
+head(HDplot_GM_results)
+dim(HDplot_GM_results)
+
+#import the snp positions for each locus
+HD_plot_SNP_pos <- read.table("Z:/WORK/TARPEY/ChinookPanel/RAD_data/VCF_trueSNPpos.txt", header=FALSE, 
+                              stringsAsFactors = FALSE, na.strings = "-" )
+colnames(HD_plot_SNP_pos) <- c("POS", "Locus_ID", "Locus")
+head(HD_plot_SNP_pos)
+
+##Import the HDplot results for the remaining 3970 loci 
+HDplot_new3970 <- read.table("Z:/WORK/TARPEY/ChinookPanel/newVCF/HDPlotResults_4.5.txt", header=TRUE, 
+                              stringsAsFactors = FALSE, na.strings = "-" )
+HDplot_new3970[1:5,1:10]
+
 
 ######################################
 #remove the commas from the sample names, and the X from the column names
@@ -51,7 +68,7 @@ tags_pos_54 <- allLoci[allLoci$SNP == 54,]
 dim(tags_pos_54)
 tags2exclude54 <- unique(tags_pos_54$Tag)
 length(tags2exclude54)
-head(tags_pos_54)
+head(tags2exclude54)
 
 #Replace the genotype with 0000 at any snp that is at a tag that has a SNP at position 54
 dim(chin_raw_genepop)
@@ -68,8 +85,8 @@ for (a in 1:length(allLoci$Locus)) {
 }
 
 #the above bogged down my machine so I deleted the raw genotypes and cleared the memory
-# rm(chin_raw_genepop)
-# gc()
+rm(chin_raw_genepop)
+gc()
 
 ####### genotype rate per locus################
 
@@ -92,10 +109,6 @@ retainedLoci_80perc$Locus<-filteredLoci$Locus
 head(retainedLoci_80perc)
 length(unique(retainedLoci_80perc$Tag))
 
-# #format dataset to remove X from locus names
-# filteredLociIDs<-filteredLoci$Locus
-# filteredLociIDs<-gsub("X","",filteredLociIDs)
-
 #filter dataset to include only filtered loci
 filteredGenos<-chin_filtering_genepop[,colnames(chin_filtering_genepop)%in%filteredLoci$Locus]
 dim(filteredGenos)
@@ -115,7 +128,6 @@ filteredGenos <- cbind(SampleName, filteredGenos)
 filteredGenos<-merge(chin_all_popINFO,filteredGenos, by="SampleName")
 filteredGenos[1:5,1:15]
 dim(filteredGenos)
-
 
 #Function to get minor allele frequency for each locus
 calculateMAF<-function(genotypes){
@@ -137,7 +149,6 @@ calculateMAF<-function(genotypes){
 }
 
 ######### Test MAF >= 0.05 in at least one of 16 pops ############
-
 #create a dataframe for our MAF results
 npops<- length(unique(filteredGenos$Population))
 nloci<- dim(retainedLoci_80perc)[1]
@@ -147,7 +158,6 @@ rownames(filteredGenos_POP_MAF)<-as.vector(unique(filteredGenos$Population)) #na
 colnames(filteredGenos_POP_MAF)<-retainedLoci_80perc$Locus
 filteredGenos_POP_MAF[1:6,1:6]
 dim(filteredGenos_POP_MAF)
-
 
 ##### Get the MAF for each locus by population 
 for (i in 1:16){ #16 is the unique number of populations we have
@@ -169,6 +179,7 @@ lociMAF<-vector()
 lociMAF<-apply(filteredGenos_POP_MAF,2,function(x) sum(x >=0.05, na.rm=TRUE))
 lociMAF<-data.frame(keynames=names(lociMAF), value=lociMAF, row.names = NULL)
 colnames(lociMAF)<-c("Locus", "PopsMAF")
+dim(lociMAF)
 
 #if the loci does not pass the test, delete it
 locipassedMAF<-vector()
@@ -177,7 +188,7 @@ dim(locipassedMAF)
 head(locipassedMAF)
 
 #what percent of the loci do we KEEP with this filter? 
-Percent_locipassedMAF <- ((dim(locipassedMAF)[1])/70530)*100
+Percent_locipassedMAF <- ((dim(locipassedMAF)[1])/(dim(lociMAF)[1]))*100
 Percent_locipassedMAF
 
 #what percent of the tags do we KEEP with this filter? 
@@ -214,7 +225,7 @@ dim(filteredGenos_BREG_MAF)
 #colnames(filteredGenos_BREG_MAF[,1])
 
 ##### Filter the loci by the MAF results by population
-##retain loci that were at least 0.05 in any of the 16 populations
+##retain loci that were at least 0.05 in any of the 4 broad regions
 loci_BREGMAF<-vector()
 loci_BREGMAF<-apply(filteredGenos_BREG_MAF,2,function(x) sum(x >=0.05, na.rm=TRUE))
 loci_BREGMAF<-data.frame(keynames=names(loci_BREGMAF), value=loci_BREGMAF, row.names = NULL)
@@ -239,6 +250,7 @@ head(locipassed_BREGMAF_keepList)
 #get unique tags from initial filtered dataset
 locipassed_BREGMAF<-data.frame(str_split_fixed(locipassed_BREGMAF$Locus,"_",2))
 colnames(locipassed_BREGMAF)<-c("Tag","SNP")
+length(unique(locipassed_BREGMAF$Tag))
 
 ## what percent of the loci we keep with this filter? 
 UNIQUEtags_locipassed_BREGMAF<-unique(locipassed_BREGMAF$Tag)
@@ -250,6 +262,7 @@ Percent_UNIQUEtags_locipassed_BREGMAF
 filtered_MAF_Genos<-filteredGenos[,((colnames(filteredGenos) %in% locipassed_BREGMAF_keepList) | (colnames(filteredGenos) %in% colnames(chin_all_popINFO)))]
 dim(filtered_MAF_Genos)
 filtered_MAF_Genos[1:4,1:15]
+
 
 ################## Output lists of Loci that passed MAF filter############
 #output list of filtered loci, need to open as binary file (using write binary, "wb") to give unix line endings
@@ -289,14 +302,8 @@ filtered_MAF_Genos_oneSNP<-apply(filtered_MAF_Genos[,c(7:(dim(filtered_MAF_Genos
 head(filtered_MAF_Genos_oneSNP)
 
 #put the results in a dataframe
-filtered_MAF_Genos_oneSNP_temp<-data.frame(value=filtered_MAF_Genos_oneSNP,row.names=names(filtered_MAF_Genos_oneSNP))
-colnames(filtered_MAF_Genos_oneSNP_temp)<-c("MAF")
-head(filtered_MAF_Genos_oneSNP_temp)
-
-#concatenate the locus names to the results. 
-Loci_temp<-colnames(filtered_MAF_Genos[,c(7:(dim(filtered_MAF_Genos)[2]))])
-length(Loci_temp)
-filtered_MAF_Genos_oneSNP_temp$Locus<-Loci_temp
+filtered_MAF_Genos_oneSNP_temp<-data.frame(keynames=names(filtered_MAF_Genos_oneSNP),value=filtered_MAF_Genos_oneSNP,row.names=NULL)
+colnames(filtered_MAF_Genos_oneSNP_temp)<-c("Locus","MAF")
 head(filtered_MAF_Genos_oneSNP_temp)
 
 #split the tags and snp positions
@@ -313,194 +320,179 @@ dim(filtered_MAF_Genos_oneSNP_temp)
 #Retain the SNP with the highest MAF per tag
 # This one gives an output with the correct number of unique tags, and spot checked in excel
 oneMAF<- filtered_MAF_Genos_oneSNP_temp %>% group_by(Tag) %>% slice(which.max(MAF))
-head(oneMAF)
+length(unique(oneMAF$Tag))
 oneMAF<-as.data.frame(oneMAF)
+oneMAF$Tag <- as.numeric(as.character(oneMAF$Tag))
+oneMAF <- oneMAF[order(oneMAF$Tag, decreasing = FALSE),]
 head(oneMAF)
 dim(oneMAF)
-
 #write.table(oneMAF,"Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/OneMAF.txt",quote=FALSE,row.names=FALSE)
 
 #filter dataset to include only one SNP per tag loci
-length(oneMAF$Locus)
-
-filtered_MAF_Genos_oneSNP<-filtered_MAF_Genos[,oneMAF$Locus]
+filtered_MAF_Genos_oneSNP<-filtered_MAF_Genos[,((colnames(filtered_MAF_Genos) %in% oneMAF$Locus) | (colnames(filtered_MAF_Genos) %in% colnames(chin_all_popINFO)))]
 dim(filtered_MAF_Genos_oneSNP)
 
-filtered_MAF_Genos[1:5,7:15]
-filtered_MAF_Genos_oneSNP[1:5,7:15]
+filtered_MAF_Genos[1:5,1:20]
+dim(filtered_MAF_Genos)
+filtered_MAF_Genos_oneSNP[1:5,1:11]
 
-####<------------------------------------------------START HERE,
-############# Write a txt file with the list of loci- use as whitelist or subset genepop file
-
-#subset genepop file (for use with subset_genepop_by_SNPs.pl):
-
-#format dataset to remove X from locus names
-oneMAF_loci<-gsub("X","",oneMAF$Locus)
-head(oneMAF_loci)
-
-outputFile<-file("Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/oneSNPpertag_subsetgenepop.txt", "wb")
-write.table(oneMAF_loci,outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
-close(outputFile)
-
-
-##################### Run Genepop with the genepop file for HWE and Fis and import the results here for filtering based on those 
-
-#### Take the original Genepop file that was formatted for import at the beginning of this code and make it on snp per line
-###  Then subset it with the list that was exported above, and run it in Genepop for HWE
-###  Take the output of that and use the perl script get_HWresults_from_genepop.pl to get the results from the INF output file
-
-HWE_table_Pre_Filtered <- read.table("Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/batch_4_31485LOCI_HWE_results.txt" ,
-                                     stringsAsFactors = FALSE, row.names= 1)
-HWE_pops <-c("AMUR_10", "AMUR_11", "SUSIT_13", "HAYLY_09", "HAYLY_10", "KOPE_91", "KOPE_96", "KUSHI_06", "KUSHI_07",
-             "LAKEL_06", "LAKEL_07", "NOME_91", "NOME_94", "SNOH_03", "SNOH_96", "SUSIT_14", "TAUY_09", "TAUY_12")
-
-colnames(HWE_table_Pre_Filtered)<-c("AMUR_10", "AMUR_11", "SUSIT_13", "HAYLY_09", "HAYLY_10", "KOPE_91", "KOPE_96", "KUSHI_06", "KUSHI_07",
-                                    "LAKEL_06", "LAKEL_07", "NOME_91", "NOME_94", "SNOH_03", "SNOH_96", "SUSIT_14", "TAUY_09", "TAUY_12")
-head(HWE_table_Pre_Filtered)
-dim(HWE_table_Pre_Filtered)
-nrow(HWE_table_Pre_Filtered)
-
-##### Filter the loci by the HWE
-##retain loci that were at least 0.05 in at least 9 of the populations
-
-loci_HWE_blank_test<-vector()
-loci_HWE_blank_test<-apply(HWE_table,1,function(x) sum(x <=0.05, na.rm=TRUE)-sum(x =="-", na.rm=TRUE))
-loci_HWE_blank_test<-data.frame(keynames=names(loci_HWE_blank_test), value=loci_HWE_blank_test, row.names = NULL)
-colnames(loci_HWE_blank_test)<-c("Locus", "failedHWE-blanks")
-head(loci_HWE_blank_test)
-dim(loci_HWE_blank_test)
-
-#if the loci does not pass the test, delete it from this group
-locipassedHWE_test<-vector()
-locipassedHWE_test<-subset(loci_HWE_blank_test, loci_HWE_blank_test[,2]<=9)
-dim(locipassedHWE_test)
-head(locipassedHWE_test)
-
-# #if the loci does not pass the test put it into a list for later
-# lociFailedHWE_test<-vector()
-# lociFailedHWE_test<-subset(loci_HWE_blank_test, loci_HWE_blank_test[,2]>=9)
-# dim(lociFailedHWE_test)
-# head(lociFailedHWE_test)
-# outputFile<-file("Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/Loci_FAILED_HWE.txt", "wb")
-# write.table(lociFailedHWE_test[,1],outputFile,quote=FALSE,row.names=TRUE,col.names=FALSE,eol="\n")
-# close(outputFile)
-
-# #Retain the Loci that Passed HWE
-# HWE_table_Post_Filtered <-  HWE_table_Pre_Filtered[row.names(HWE_table_Pre_Filtered)%in%locipassedHWE_test$Locus, ] #this subsets the matrix by the row names in the list
-# dim(HWE_table_Post_Filtered)
-# head(HWE_table_Post_Filtered)
-
-
-#####################Test to see that what we got in One SNP per tag by MAF has the 16681 loci that we want
-
-#if we want to see which of our 16681 snps is included at this point
-loci_16681 <- readLines("Z:/WORK/TARPEY/Pink_Populations/listof16681LOCI.txt")
-head(loci_16681)
-
-#list of all the loci names in oneMAF_temp
-locipassedHWE_test_comp<- locipassedHWE_test$Locus
-head(locipassedHWE_test_comp)
-length(locipassedHWE_test_comp)
-
-#loci that are in 14637 and 30088, the loci that passed HWE
-length(in_16662_and_31485)
-in_14637_and_30088 <- intersect(in_16662_and_31485, locipassedHWE_test_comp)
-length(in_14637_and_30088)
-
-diff_14637_and_30088 <- setdiff(in_16662_and_31485, locipassedHWE_test_comp)
-length(diff_14637_and_30088)
-
-###########################################
-
-##################subsample the genotypes based on the Loci that passed HWE
-#all_newGenos <- temp_allnewGenos #reset
-
-#format genotype dataset to remove X from locus names
-#temp_allnewGenos <- all_newGenos
-colnames(all_newGenos)<-gsub("X","",colnames(all_newGenos))
-all_newGenos[1:5,1:5]
-
-#filter dataset to include only loci that passed HWE
-all_newGenos_HWE_filtered<-all_newGenos[,colnames(all_newGenos)%in%locipassedHWE_test$Locus]
-dim(all_newGenos_HWE_filtered)
-all_newGenos_HWE_filtered[1:5,1:5]
-
-
-####Write list of loci that passed all filters so far:
-outputFile <- file("Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/Loci_passed_HWE_filtered.txt", "wb")
-write.table(colnames(all_newGenos_HWE_filtered),outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
-close(outputFile)
-
-
+##################Get individual Genotype rate to filter individuals ###################
 
 #get genotype rate per sample for filtered loci
-all_newGenos_HWE_inds<-apply(all_newGenos_HWE_filtered,1,function(x) 1-(sum(x=="0000")/dim(all_newGenos_HWE_filtered)[2]))
-all_newGenos_HWE_inds<-data.frame(keyName=names(all_newGenos_HWE_inds), value=all_newGenos_HWE_inds, row.names=NULL)
-colnames(all_newGenos_HWE_inds)<-c("Sample","GenoRate")
-dim(all_newGenos_HWE_inds)
-head(all_newGenos_HWE_inds)
-
+filtered_MAF_Genos_oneSNP_inds<-apply(filtered_MAF_Genos_oneSNP,1,function(x) 1-(sum(x=="0000")/(dim(filtered_MAF_Genos_oneSNP)[2])))
+filtered_MAF_Genos_oneSNP_inds<-data.frame(keyName=filtered_MAF_Genos_oneSNP$SampleName, value=filtered_MAF_Genos_oneSNP_inds, row.names=NULL)
+colnames(filtered_MAF_Genos_oneSNP_inds)<-c("Sample","GenoRate")
+dim(filtered_MAF_Genos_oneSNP_inds)
+head(filtered_MAF_Genos_oneSNP_inds)
 
 #plot ranked genotype rate for samples with filtered loci
-all_newGenos_HWE_inds_ranked<-all_newGenos_HWE_inds[order(all_newGenos_HWE_inds$GenoRate),]
-all_newGenos_HWE_inds_ranked$rank<-seq(1,dim(all_newGenos_HWE_inds_ranked)[1],by=1)
-ggplot()+geom_point(data=all_newGenos_HWE_inds_ranked,aes(x=rank,y=GenoRate))+theme_bw() + 
+filtered_MAF_Genos_oneSNP_inds_ranked<-filtered_MAF_Genos_oneSNP_inds[order(filtered_MAF_Genos_oneSNP_inds$GenoRate),]
+filtered_MAF_Genos_oneSNP_inds_ranked$rank<-seq(1,dim(filtered_MAF_Genos_oneSNP_inds_ranked)[1],by=1)
+ggplot()+geom_point(data=filtered_MAF_Genos_oneSNP_inds_ranked,aes(x=rank,y=GenoRate))+theme_bw() + 
   geom_hline(aes(yintercept=0.80),lty="dashed")+ggtitle("Sample Genotype Rate One SNP per Tag; Line Shows 80% Genotype Rate")
-#ggsave(filename="Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/SampleGenotypeRateofLociGenotypedin80PCSamples.pdf")
-
+#ggsave(filename="Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/SampleGenotypeRateofLociGenotypedin80PCSamples.pdf")
 
 #Keep samples with >=80% genotype rate
-filteredSamples<-all_newGenos_HWE_inds[all_newGenos_HWE_inds$GenoRate>=0.80,]
-filteredGenos_filteredSamples<-all_newGenos_HWE_filtered[rownames(all_newGenos_HWE_filtered)%in%filteredSamples$Sample,]
+filteredSamples<-filtered_MAF_Genos_oneSNP_inds[filtered_MAF_Genos_oneSNP_inds$GenoRate>=0.80,]
+filteredGenos_filteredSamples<-filtered_MAF_Genos_oneSNP[filtered_MAF_Genos_oneSNP$SampleName%in%filteredSamples$Sample,]
 dim(filteredGenos_filteredSamples)
+filteredGenos_filteredSamples[1:5,1:15]
 
 
+############################Check the locus genotype rate again##################
 #get genotype rate per locus for filtered sample dataset
-locusGenoRate_filteredSamples<-apply(filteredGenos_filteredSamples,2,function(x) 1-(sum(x=="0000")/dim(all_newGenos_HWE_inds)[1]))
+locusGenoRate_filteredSamples<-apply(filteredGenos_filteredSamples[,c(7:dim(filteredGenos_filteredSamples)[2])],2,function(x) 1-(sum(x=="0000")/dim(filteredGenos_filteredSamples)[1]))
 locusGenoRate_filteredSamples<-data.frame(keyName=names(locusGenoRate_filteredSamples), value=locusGenoRate_filteredSamples, row.names=NULL)
 colnames(locusGenoRate_filteredSamples)<-c("Locus","GenoRate")
 dim(locusGenoRate_filteredSamples)
 head(locusGenoRate_filteredSamples)
 
-####Write a table of the genotypes/individuals that have passed all the filters so far:
-outputFile <- file("Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/FilteredGenos_FilteredInds.txt", "wb")
-write.table(filteredGenos_filteredSamples,outputFile,quote=FALSE,row.names=TRUE,col.names=TRUE,eol="\n")
-close(outputFile)
-
-####Write a list of the individuals that have passed all the filters so far:
-filteredSample_names <- row.names(filteredGenos_filteredSamples)
-filteredSample_names <- as.list(filteredSamples$Sample)
-outputFile <- file("Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/filteredSample_names.txt", "wb")
-write.table(filteredSample_names,outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
-close(outputFile)
-
-####Write a list of the individuals that have FAILED the filters so far:
-#samples with >=80% genotype rate
-FAILED_filteredSamples<-all_newGenos_HWE_inds[all_newGenos_HWE_inds$GenoRate<0.80,]
-dim(FAILED_filteredSamples)
-head(FAILED_filteredSamples)
-FAILED_filteredSample_names <-as.list(FAILED_filteredSamples$Sample)
-outputFile <- file("Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/FAILED_filteredSamples.txt", "wb")
-write.table(FAILED_filteredSample_names,outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
-close(outputFile)
-
-
-######## Should we re-filter the loci based on genotype rate now that there are indv missing? NO
-
 #plot ranked genotype rate for samples with filtered loci
 x_ranked<-locusGenoRate_filteredSamples[order(locusGenoRate_filteredSamples$GenoRate),]
 x_ranked$rank<-seq(1,dim(x_ranked)[1],by=1)
-ggplot()+geom_point(data=x_ranked,aes(x=rank,y=GenoRate))+ggtitle("Locus Genotype Rate of Filtered 465 Samples")+theme_bw()
-#ggsave(filename="Z:/WORK/TARPEY/Exp_Pink_Pops/FilteringGenotypes/SecondFiltering/LocusGenotypeRateofFiltered465Samples.pdf")
+ggplot()+geom_point(data=x_ranked,aes(x=rank,y=GenoRate))+ggtitle("Locus Genotype Rate of Filtered Samples")+theme_bw()
+#ggsave(filename="Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/LocusGenotypeRateofFiltered465Samples.pdf")
 
-#Which loci are genotyped at less than 80% Genotype rate? 
-x_80<-locusGenoRate_filteredSamples[locusGenoRate_filteredSamples$GenoRate<0.80,]
-x_80_sort <-x_80[order(x_80$GenoRate, decreasing = FALSE),]
-dim(x_80_sort)
-head(x_80_sort)
+## Should we re-filter the loci based on genotype rate now that there are indv missing? NO
+
+###########Filter based on HDPLOT paralog status############  
+##########these results are from Garrett Running HDPlot on his set of loci (19k) 
+##So first I have to figure out what loci I am missing 
+
+#merge the snp position with the HDplot results
+head(HDplot_GM_results)
+HDplot_GM_results_pos <- merge(HDplot_GM_results, HD_plot_SNP_pos, by= "Locus_ID") #this also sorts them by the locus ID
+head(HDplot_GM_results_pos)
+
+# ####WHich loci need to have HDplot run on a different SNP? 
+# #
+# #Compare my filtered Loci to Garretts HDplot results#
+# loci_ct_filtered<-data.frame(str_split_fixed(locusGenoRate_filteredSamples$Locus,"_",2))
+# names(loci_ct_filtered) <- c("Tag", "Snp")
+# loci_ct_filtered$Locus <- locusGenoRate_filteredSamples$Locus
+# head(loci_ct_filtered)
+# 
+# ###pull out loci that Garrett used
+# HDplot_loci <- HDplot_GM_results_pos$Locus
+# length(HDplot_loci)
+# head(HDplot_loci)
+# 
+# #overlap between mine and his loci
+# overlap_btw_HD_my <- intersect(HDplot_loci, loci_ct_filtered$Locus)
+# length(overlap_btw_HD_my)
+# head(overlap_btw_HD_my)
+# 
+# #In my set, not in his
+# difference_btw_HD_my <- setdiff(loci_ct_filtered$Locus, HDplot_loci)
+# length(difference_btw_HD_my)
+# head(difference_btw_HD_my)
+# 
+# ####Write a table the loci that need to have a VCF file for them to run through HDPlot:
+# outputFile <- file("Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/HDplot_SNPS_to_get_VCF.txt", "wb")
+# write.table(difference_btw_HD_my,outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
+# close(outputFile)
+# 
+# #looking at the list of unique tags that I have in my 21055 set- to get all the SNPs from each of them to run through HDplot
+# uniquetags <- locusGenoRate_filteredSamples$Locus
+# uniquetags <- data.frame(str_split_fixed(locusGenoRate_filteredSamples$Locus,"_",2))
+# uniquetags <- unique(uniquetags$X1)
+# head(uniquetags)
+# 
+# ####Write a table of the unique tags that we have in the 21005 data set:
+# outputFile <- file("Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/HDplot_tags_to_get_VCF.txt", "wb")
+# write.table(uniquetags,outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
+# close(outputFile)
+
+### Combine the New HDplot Results of the missing 3970 loci with the original GM results 
+#combine the two sets of : 
+head(HDplot_new3970)
+head(HDplot_GM_results_pos)
+dim(HDplot_GM_results_pos)
+
+#reorder the HDplot_GM_results_pos so that they line up with the ones for HDplot_new3970
+HDplot_GM_results_pos_reorder <- HDplot_GM_results_pos[,c(12,2:10)]
+colnames(HDplot_GM_results_pos_reorder) <- c("Locus_ID","depth_a","depth_b","ratio","num_hets","num_samples","het_perc","std","z","paralog")
+head(HDplot_GM_results_pos_reorder)
+
+HDPlot_combined_results <- rbind(HDplot_GM_results_pos_reorder, HDplot_new3970)
+head(HDPlot_combined_results)
+HDPlot_combined_results[19376:19382, 1:10]
+dim(HDPlot_combined_results)
+
+#make a list of the loci that are paralogs:
+#looking at the column paralog- which are the yes paralogs? 
+paralogs<-HDPlot_combined_results[HDPlot_combined_results$paralog != 0,]
+dim(paralogs)
+
+#filter the filtered data for paralogs
+
+###paralog
+HDplot_Paralogs <- paralogs$Locus_ID
+length(HDplot_Paralogs)
+head(HDplot_Paralogs)
+
+#sort the list of paralogs numerically by tag
+sorted_paralogs<-data.frame(str_split_fixed(HDplot_Paralogs,"_",2))
+head(sorted_paralogs)
+colnames(sorted_paralogs) <- c("tag", "pos")
+sorted_paralogs$tag <- as.numeric(as.character(sorted_paralogs$tag))
+sorted_paralogs <- sorted_paralogs[order(sorted_paralogs$tag),]
+sorted_paralogs$locus <- paste(sorted_paralogs$tag, sorted_paralogs$pos, sep="_")
+head(sorted_paralogs)
+sorted_paralogs_locus <- sorted_paralogs$locus
+
+#Keep samples that are not paralogs
+filteredGenos_filteredSamples[1:5,1:15]
+dim(filteredGenos_filteredSamples)
+filteredGenos_filteredSamples_filtpara<-filteredGenos_filteredSamples[,(!(colnames(filteredGenos_filteredSamples) %in% HDplot_Paralogs))]
+
+filteredGenos_filteredSamples<-filtered_MAF_Genos_oneSNP[filtered_MAF_Genos_oneSNP$SampleName%in%filteredSamples$Sample,]
+dim(filteredGenos_filteredSamples_filtpara)
+filteredGenos_filteredSamples_filtpara[1:10,1:10]
 
 
 
+########################################### Write the final genotypes and individuals to a file #########
 
+####Write a table of the genotypes/individuals that have passed all the filters so far:
+outputFile <- file("Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/filteredGenos_filteredSamples_filtpara.txt", "wb")
+write.table(filteredGenos_filteredSamples_filtpara,outputFile,quote=FALSE,row.names=TRUE,col.names=TRUE,eol="\n")
+close(outputFile)
 
+####Write a list of the individuals that have passed all the filters so far:
+filteredSample_names <- filteredSamples$Sample
+droplevels(filteredSample_names)
+outputFile <- file("Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/filteredSample_names.txt", "wb")
+write.table(filteredSample_names,outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
+close(outputFile)
+
+############# Write a txt file with the list of loci- use as whitelist or subset genepop file
+#subset genepop file (for use with subset_genepop_by_SNPs.pl):
+filtered_loci <- colnames(filteredGenos_filteredSamples_filtpara)
+length(filtered_loci)
+kept_filtered_loci <- filtered_loci[-c(1:6)]
+
+outputFile<-file("Z:/WORK/TARPEY/ChinookPanel/FilteringRawGenotypes/kept_filtered_loci.txt", "wb")
+write.table(filtered_loci,outputFile,quote=FALSE,row.names=FALSE,col.names=FALSE,eol="\n")
+close(outputFile)
 
