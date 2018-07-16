@@ -72,6 +72,7 @@ head(tags2exclude54)
 
 #Replace the genotype with 0000 at any snp that is at a tag that has a SNP at position 54
 dim(chin_raw_genepop)
+dim(chin_filtering_genepop)
 
 chin_filtering_genepop <-chin_raw_genepop
 
@@ -85,8 +86,8 @@ for (a in 1:length(allLoci$Locus)) {
 }
 
 #the above bogged down my machine so I deleted the raw genotypes and cleared the memory
-rm(chin_raw_genepop)
-gc()
+#rm(chin_raw_genepop)
+#gc()
 
 ####### genotype rate per locus################
 
