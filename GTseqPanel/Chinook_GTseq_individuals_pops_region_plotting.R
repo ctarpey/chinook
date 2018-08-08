@@ -17,16 +17,15 @@ library(scales)
 library(grid)
 
 
-PopInfo_RAD_data <- read.delim("Z:/WORK/TARPEY/ChinookPanel/RAD_data/NoCookInlet/populationMap_NoCookInlet.txt", header =TRUE)
+PopInfo_RAD_data <- read.delim("Z:/WORK/TARPEY/ChinookPanel/Data/RAD_data/NoCookInlet/populationMap_NoCookInlet.txt", header =TRUE)
 head(PopInfo_RAD_data)
 dim(PopInfo_RAD_data)
 
-
-PopInfo_GT_data <- read.delim("Z:/WORK/TARPEY/ChinookPanel/combined_RAD_GTseq_data/PopulationMap_847RAD_taq_genepop.txt", header =TRUE)
+PopInfo_GT_data <- read.delim("Z:/WORK/TARPEY/ChinookPanel/Data/combined_RAD_GTseq_data/PopulationMap_847RAD_taq_genepop.txt", header =TRUE)
 head(PopInfo_GT_data)
 dim(PopInfo_GT_data)
 
-PopInfo_GTONLY_data <- read.delim("Z:/WORK/TARPEY/ChinookPanel/GTseqOnlyData/PopulationMap_GTseqDataONLY.txt", header =TRUE)
+PopInfo_GTONLY_data <- read.delim("Z:/WORK/TARPEY/ChinookPanel/Data/GTseqOnlyData/PopulationMap_GTseqDataONLY.txt", header =TRUE)
 head(PopInfo_GTONLY_data)
 dim(PopInfo_GTONLY_data)
 
