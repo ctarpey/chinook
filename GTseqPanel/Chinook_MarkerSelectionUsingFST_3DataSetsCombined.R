@@ -100,7 +100,7 @@ head(RADGTseq_loci)
 #I got rid of the RAD, Ots_RAD and the -# to just leave the tag number. I made a text file with two columns, the original name and the tag number and imported that 
 ##here: 
 
-RADGTseq_locus_tags <- read.table("Z:/WORK/TARPEY/ChinookPanel/combined_RAD_GTseq_data/RADGTseq_locus_tags_to_match_newRAD.txt" , header=TRUE)
+RADGTseq_locus_tags <- read.table("Z:/WORK/TARPEY/ChinookPanel/Data/combined_RAD_GTseq_data/RADGTseq_locus_tags_to_match_newRAD.txt" , header=TRUE)
 dim(RADGTseq_locus_tags)
 head(RADGTseq_locus_tags)
 
@@ -176,6 +176,7 @@ dim(GTseqONLY_FST_file)
 head(RADGTseq_FST_file)
 dim(RADGTseq_FST_file)
 
+
 #add a column to each that has their identity, so that later we know what set of loci they belong to.
 allCombined_FST_tags_to_keep$Identity <- "NewRAD"
 head(allCombined_FST_tags_to_keep)
@@ -230,6 +231,13 @@ head(FST_3Combined_Kusk_Nush)
 FST_3Combined_Kusk_Nush <- FST_3Combined_Kusk_Nush[order(FST_3Combined_Kusk_Nush$Kusk_Nush, decreasing=TRUE),]
 head(FST_3Combined_Kusk_Nush)
 
+##Find the top FST for the RADGTseq_FST_file only 
+RADGTseq_FST_file_ALL <- RADGTseq_FST_file[,c("row.names","All", "Identity")]
+head(RADGTseq_FST_file_ALL)
+RADGTseq_FST_file_ALL <- RADGTseq_FST_file_ALL[order(RADGTseq_FST_file_ALL$All, decreasing=TRUE),]
+head(RADGTseq_FST_file_ALL)
+
+
 ########################################################################
 ##plot the range of the FST for each of the groups
 
@@ -238,6 +246,9 @@ AllmatchRADGTseq_FST_tags_to_keep_Ranked$rank<-seq(1,dim(AllmatchRADGTseq_FST_ta
 ggplot()+geom_point(data=AllmatchRADGTseq_FST_tags_to_keep_Ranked,aes(x=rank,y=ALL_MRG, color= Identity), size = .5)+ggtitle("FST range of newRAD ALL populations that match those in RADGTseq dataset ")+theme_bw()
 #ggsave(filename="Z:/WORK/TARPEY/ChinookPanel/AllmatchRADGTseq_FST_tags_to_keep_Ranked.pdf")
 
+RADGTseq_FST_file_ALL_ranked <- RADGTseq_FST_file_ALL[order(RADGTseq_FST_file_ALL$All, decreasing=TRUE),]
+RADGTseq_FST_file_ALL_ranked$rank<-seq(1,dim(RADGTseq_FST_file_ALL_ranked)[1],by=1)
+ggplot()+geom_point(data=RADGTseq_FST_file_ALL_ranked,aes(x=rank,y=All, color= Identity), size = .5)+ggtitle("FST range of RADGTseq ALL populations ")+theme_bw()
 
 FST_3Combined_ALL_ranked <- FST_3Combined_ALL[order(FST_3Combined_ALL$All, decreasing=TRUE),]
 FST_3Combined_ALL_ranked$rank<-seq(1,dim(FST_3Combined_ALL_ranked)[1],by=1)
@@ -266,10 +277,11 @@ ggplot()+geom_point(data=FST_3Combined_ALL_ranked,aes(x=rank,y=All), color= "#93
   geom_point(data=FST_3Combined_Kusk_ranked,aes(x=rank,y=Kusk), color = "#00ADFA") + #blue
   geom_point(data=FST_3Combined_Nush_ranked,aes(x=rank,y=Nush), color= "#F8766D") + #salmon
   geom_point(data=FST_3Combined_Kusk_Nush_ranked,aes(x=rank,y=Kusk_Nush), color = "#AE87FF") + #purple
+  geom_point(data=RADGTseq_FST_file_ALL_ranked,aes(x=rank,y=All), color = "#7bccc4") + #mint
   geom_hline(yintercept = 0, color = "black", size= .5) +  theme_bw() + 
   theme(text = element_text(size= 17), legend.title = element_blank(),legend.text = element_text(size= 14), axis.line.x = element_line(), axis.line.y = element_line()) +
-  labs(list(title= "FST range of the five combined dataset population groups", x = "Rank", y = "FST", size = 20))  +
-  guides(color = guide_legend(override.aes = list(shape = 19, size= 5, fill= c("#93AA00", "#E88527", "#00ADFA", "#F8766D","#AE87FF"))))
+  labs(list(title= "FST range of the six combined dataset population groups", x = "Rank", y = "FST", size = 20)) +
+  guides(color = guide_legend(override.aes = list(shape = 19, size= 5, fill= c("#93AA00","magenta", "#00ADFA", "#F8766D","#AE87FF", "#7bccc4"))))
 
 #plot all five  on the same graph, showing that the AllmatchRADGTseq_FST_tags_to_keep_Ranked is different than the FST_3Combined_ALL_ranked
 ggplot()+geom_point(data=FST_3Combined_ALL_ranked,aes(x=rank,y=All, colour = "ALL")) +
@@ -277,13 +289,26 @@ ggplot()+geom_point(data=FST_3Combined_ALL_ranked,aes(x=rank,y=All, colour = "AL
   geom_point(data=FST_3Combined_Kusk_ranked,aes(x=rank,y=Kusk, colour = "Kusk")) +
   geom_point(data=FST_3Combined_Nush_ranked,aes(x=rank,y=Nush, colour = "Nush")) +
   geom_point(data=FST_3Combined_Kusk_Nush_ranked,aes(x=rank,y=Kusk_Nush, colour = "Kusk_Nush")) +
-  scale_colour_manual(values = c("goldenrod1", "blue", "violetred1", "orangered1", "red1"), 
-                      breaks = c("ALL","ALL_MRG", "Kusk", "Nush", "Kusk_Nush")) +
+  geom_point(data=RADGTseq_FST_file_ALL_ranked,aes(x=rank,y=All, colour = "AllRADGTseq")) + #mint
+  scale_colour_manual(values = c("goldenrod1", "blue", "#7bccc4","violetred1", "orangered1", "red1"), 
+                      breaks = c("ALL","ALL_MRG","AllRADGTseq", "Kusk", "Nush", "Kusk_Nush")) +
   geom_hline(yintercept = 0, color = "black", size= .5) +  theme_bw() + 
   theme(text = element_text(size= 17), legend.title = element_blank(),legend.text = element_text(size= 14), axis.line.x = element_line(), axis.line.y = element_line()) +
-  labs(list(title= "FST range of the four Combined dataset population groups", x = "Rank", y = "FST", size = 20))  +
-  guides(color = guide_legend(override.aes = list(shape = 19, size= 5, fill= c("goldenrod1",  "blue", "violetred1", "orangered1", "red1"))))
+  labs(list(title= "FST range of the five combined dataset population groups", x = "Rank", y = "FST", size = 20))  +
+  guides(color = guide_legend(override.aes = list(shape = 19, size= 5, fill= c("goldenrod1",  "blue", "#7bccc4", "violetred1", "orangered1", "red1"))))
 
+
+#plot four on the same graph, showing that the AllmatchRADGTseq_FST_tags_to_keep_Ranked is different than the FST_3Combined_ALL_ranked
+ggplot()+geom_point(data=FST_3Combined_ALL_ranked,aes(x=rank,y=All, colour = "ALL")) +
+  geom_point(data=FST_3Combined_Kusk_ranked,aes(x=rank,y=Kusk, colour = "Kusk")) +
+  geom_point(data=FST_3Combined_Nush_ranked,aes(x=rank,y=Nush, colour = "Nush")) +
+  geom_point(data=FST_3Combined_Kusk_Nush_ranked,aes(x=rank,y=Kusk_Nush, colour = "Kusk_Nush")) +
+  scale_colour_manual(values = c("goldenrod1",  "violetred1", "orangered1", "red1"), 
+                      breaks = c("ALL", "Kusk", "Nush", "Kusk_Nush")) +
+  geom_hline(yintercept = 0, color = "black", size= .5) +  theme_bw() + 
+  theme(text = element_text(size= 17), legend.title = element_blank(),legend.text = element_text(size= 14), axis.line.x = element_line(), axis.line.y = element_line()) +
+  labs(list(title= "FST range of the four combined dataset population groups", x = "Rank", y = "FST", size = 20))  +
+  guides(color = guide_legend(override.aes = list(shape = 19, size= 5, fill= c("goldenrod1",  "violetred1", "orangered1", "red1"))))
 
 
 
@@ -296,6 +321,7 @@ ggplot()+geom_point(data=FST_3Combined_ALL_ranked,aes(x=rank,y=All, colour = "AL
 # FST_3Combined_Nush
 # FST_3Combined_Kusk_Nush
 # AllmatchRADGTseq_FST_tags_to_keep_Ranked
+# RADGTseq_FST_file_ALL_ranked
 
 ################# Choose the top FST loci in each of the population groups for the data set 
 #top FST loci for FST_3Combined_ALL_var
@@ -341,11 +367,22 @@ AllmatchRADGTseq_FST_set_maxFST <- max(AllmatchRADGTseq_FST_set$ALL_MRG)
 AllmatchRADGTseq_FST_set_minFST <- min(AllmatchRADGTseq_FST_set$ALL_MRG)
 cat("AllmatchRADGTseq FST max, min, average: ", AllmatchRADGTseq_FST_set_maxFST, AllmatchRADGTseq_FST_set_minFST, AllmatchRADGTseq_FST_set_avgFST )
 
+
+#top FST loci for  AllmatchRADGTseq_FST_tags_to_keep_Ranked
+RADGTseq_ALL_FST_var <- 100 #<--------------------------------------------dictates the number of loci
+RADGTseq_ALL_FST_set <- RADGTseq_FST_file_ALL_ranked[1:RADGTseq_ALL_FST_var,]
+RADGTseq_ALL_FST_set_avgFST <- mean(RADGTseq_ALL_FST_set$All)
+RADGTseq_ALL_FST_set_maxFST <- max(RADGTseq_ALL_FST_set$All)
+RADGTseq_ALL_FST_set_minFST <- min(RADGTseq_ALL_FST_set$All)
+cat("RADGTseq_ALL_FST FST max, min, average: ", RADGTseq_ALL_FST_set_maxFST, RADGTseq_ALL_FST_set_minFST, RADGTseq_ALL_FST_set_avgFST )
+
+
 ### see which loci are in the five of the population groups
-FST_3Combined_union <- c(FST_3Combined_Kusk_Nush_set$row.names, FST_3Combined_Nush_set$row.names, FST_3Combined_ALL_set$row.names, FST_3Combined_Kusk_set$row.names, AllmatchRADGTseq_FST_set$row.names)
-FST_3Combined_union <- unique(FST_3Combined_union)
+FST_3Combined_union <- c(RADGTseq_ALL_FST_set$row.names, FST_3Combined_Kusk_Nush_set$row.names, FST_3Combined_Nush_set$row.names, FST_3Combined_ALL_set$row.names, FST_3Combined_Kusk_set$row.names, AllmatchRADGTseq_FST_set$row.names)
 length(FST_3Combined_union)
-head(FST_3Combined_union)
+FST_3Combined_union_unique <- unique(FST_3Combined_union)
+length(FST_3Combined_union_unique)
+head(FST_3Combined_union_unique)
 
 ###Rank the loci 
 ## make a new dataframe that has the FST info for the union of the sets 
@@ -354,6 +391,7 @@ FST_3Combined_Kusk_set$rank<-seq(1,dim(FST_3Combined_Kusk_set)[1],by=1)
 FST_3Combined_Nush_set$rank<-seq(1,dim(FST_3Combined_Nush_set)[1],by=1)
 FST_3Combined_Kusk_Nush_set$rank<-seq(1,dim(FST_3Combined_Kusk_Nush_set)[1],by=1)
 AllmatchRADGTseq_FST_set$rank<-seq(1,dim(AllmatchRADGTseq_FST_set)[1],by=1) 
+RADGTseq_ALL_FST_set$rank<-seq(1,dim(RADGTseq_ALL_FST_set)[1],by=1) 
 
 #plot all four on the same graph in different colors
 ggplot()+geom_point(data=FST_3Combined_ALL_set,aes(x=rank,y=All, colour = "ALL")) +
@@ -361,12 +399,13 @@ ggplot()+geom_point(data=FST_3Combined_ALL_set,aes(x=rank,y=All, colour = "ALL")
   geom_point(data=FST_3Combined_Nush_set,aes(x=rank,y=Nush, colour = "Nush")) +
   geom_point(data=FST_3Combined_Kusk_Nush_set,aes(x=rank,y=Kusk_Nush, colour = "Kusk_Nush")) +
   geom_point(data=AllmatchRADGTseq_FST_set,aes(x=rank,y=ALL_MRG, colour = "ALL_MRG")) +
-  scale_colour_manual(values = c("goldenrod1", "violetred1", "orangered1", "red1", "blue"), 
-                      breaks = c("ALL", "Kusk", "Nush", "Kusk_Nush", "ALL_MRG")) +
+  geom_point(data=RADGTseq_ALL_FST_set,aes(x=rank,y=All, colour = "AllRADGTseq"))+
+  scale_colour_manual(values = c("goldenrod1", "violetred1", "orangered1", "red1", "blue","#7bccc4"), 
+                      breaks = c("ALL", "Kusk", "Nush", "Kusk_Nush", "ALL_MRG","AllRADGTseq")) +
   geom_hline(yintercept = 0, color = "black", size= .5) +  theme_bw() + 
   theme(text = element_text(size= 17), legend.title = element_blank(),legend.text = element_text(size= 14), axis.line.x = element_line(), axis.line.y = element_line()) +
   labs(list(title= "FST range of the four Combined dataset population groups", x = "Rank", y = "FST", size = 20))  +
-  guides(color = guide_legend(override.aes = list(shape = 19, size= 5, fill= c("goldenrod1", "violetred1", "orangered1", "red1", "blue"))))
+  guides(color = guide_legend(override.aes = list(shape = 19, size= 5, fill= c("goldenrod1", "violetred1", "orangered1", "red1", "blue","#7bccc4"))))
 
 #plot all four on the same graph in different colors
 ggplot()+geom_point(data=FST_3Combined_ALL_set,aes(x=rank,y=All, colour = "ALL")) +
@@ -390,38 +429,95 @@ ggplot()+geom_point(data=FST_3Combined_ALL_set,aes(x=rank,y=All, colour = Identi
   theme(text = element_text(size= 17), legend.title = element_blank(),legend.text = element_text(size= 14), axis.line.x = element_line(), axis.line.y = element_line()) +
   labs(list(title= "FST range of the four Combined dataset population groups", x = "Rank", y = "FST", size = 20))  
 
-############
-########Figure out how many of these are already in the panels- especially panel # 2, that tells the cook inlet pops apart 
-
-
-
-
-
-
-
-
-
-
-
 ########################################################
 ########################################################
 ########################################################
-##I have not done the below ,but it is useful if we want to output some tables of these loci. 
+#make a data frame that is all the info of the loci that we are keeping moving forward. 
 
+#add a column that has why the locus was chosen and what the FST is from 
+FST_3Combined_ALL_set$WhyChosen <- "All"
+head(FST_3Combined_ALL_set)
+dim(FST_3Combined_ALL_set)
 
+FST_3Combined_Kusk_set$WhyChosen <- "Kusk"
+head(FST_3Combined_Kusk_set)
+dim(FST_3Combined_Kusk_set)
+
+FST_3Combined_Nush_set$WhyChosen <- "Nush"
+head(FST_3Combined_Nush_set)
+dim(FST_3Combined_Nush_set)
+
+FST_3Combined_Kusk_Nush_set$WhyChosen <- "Kusk_Nush"
+head(FST_3Combined_Kusk_Nush_set)
+dim(FST_3Combined_Kusk_Nush_set)
+
+AllmatchRADGTseq_FST_set$WhyChosen <- "Allmatch"
+head(AllmatchRADGTseq_FST_set)
+dim(AllmatchRADGTseq_FST_set)
+
+RADGTseq_ALL_FST_set$WhyChosen <- "AllRADGT"
+head(RADGTseq_ALL_FST_set)
+dim(RADGTseq_ALL_FST_set)
+
+##Figure out how many loci came from each group "Identity"
+a <- table(FST_3Combined_ALL_set$Identity)
+b <-table(FST_3Combined_Kusk_set$Identity)
+c <-table(FST_3Combined_Nush_set$Identity)
+d <-table(FST_3Combined_Kusk_Nush_set$Identity)
+e <-table(AllmatchRADGTseq_FST_set$Identity)
+f <-table(RADGTseq_ALL_FST_set$Identity)
+
+a
+b
+c
+d
+e
+f
+
+aa<- (a/(length(FST_3Combined_ALL_set$Identity)))*100
+aa
+bb<- (b/(length(FST_3Combined_Kusk_set$Identity)))*100
+bb
+cc<- (c/(length(FST_3Combined_Nush_set$Identity)))*100
+cc
+dd<- (d/(length(FST_3Combined_Kusk_Nush_set$Identity)))*100
+dd
+ee<- (e/(length(AllmatchRADGTseq_FST_set$Identity)))*100
+ee
+ff<- (f/(length(RADGTseq_ALL_FST_set$Identity)))*100
+ff
+
+### Combine them all and when duplicated, keep the locus with the highest rating
+#first change the column with the type of FST to just FST so we cand bind them together
+
+names(FST_3Combined_ALL_set) <- c("Locus", "FST","Identity","rank","WhyChosen")
+head(FST_3Combined_ALL_set)
+names(FST_3Combined_Kusk_set) <- c("Locus", "FST","Identity","rank","WhyChosen")
+head(FST_3Combined_Kusk_set)
+names(FST_3Combined_Nush_set) <- c("Locus", "FST","Identity","rank","WhyChosen")
+head(FST_3Combined_Nush_set)
+names(FST_3Combined_Kusk_Nush_set) <- c("Locus", "FST","Identity","rank","WhyChosen")
+head(FST_3Combined_Kusk_Nush_set)
+names(AllmatchRADGTseq_FST_set) <- c("Locus", "FST","Identity","rank","WhyChosen")
+head(AllmatchRADGTseq_FST_set)
+names(RADGTseq_ALL_FST_set) <- c("Locus", "FST","Identity","rank","WhyChosen")
+head(RADGTseq_ALL_FST_set)
+
+potentialPanelmarkers_FST <- rbind(FST_3Combined_ALL_set,FST_3Combined_Kusk_set,FST_3Combined_Nush_set,
+                                   FST_3Combined_Kusk_Nush_set,AllmatchRADGTseq_FST_set, RADGTseq_ALL_FST_set )
+dim(potentialPanelmarkers_FST)
+head(potentialPanelmarkers_FST)
+
+potentialPanelLoci <- unique(potentialPanelmarkers_FST$Locus)
+length(potentialPanelLoci)
+
+#figure out how many total were on the previous panels
+potentialPanel_oldLoci <- potentialPanelmarkers_FST[potentialPanelmarkers_FST$Identity != "NewRAD",]
+dim(potentialPanel_oldLoci)
+potentialPanel_oldLociunique <- unique(potentialPanel_oldLoci$Locus)
+length(potentialPanel_oldLociunique)
 
 ### Write the FST table for the union of the GTseqONLY_FST_union_FST to a file 
-outputFile <- file("Z:/WORK/TARPEY/ChinookPanel/DataAnalysis/Genepop/GTseqONLY_FST_union.txt", "wb")
-write.table(GTseqONLY_FST_union_FST,outputFile,quote=FALSE,row.names=FALSE,col.names=TRUE,eol="\n")
+outputFile <- file("Z:/WORK/TARPEY/ChinookPanel/DataAnalysis/potentialPanelmarkers_FST.txt", "wb")
+write.table(potentialPanelmarkers_FST,outputFile,quote=FALSE,row.names=FALSE,col.names=TRUE,eol="\n")
 close(outputFile)
-## make a new dataframe that has the FST info for the union of the sets 
-allCombined_FST_union_FST <- allCombined_FST_file[allCombined_FST_file$row.names %in% allCombined_FST_union,]  
-allCombined_FST_union_FST_sort <-allCombined_FST_union_FST[order(allCombined_FST_union_FST$All, decreasing = TRUE),]
-head(allCombined_FST_union_FST_sort)
-dim(allCombined_FST_union_FST_sort)
-
-### Write the FST table for the union of the allCombined_FST_union_FST to a file 
-outputFile <- file("Z:/WORK/TARPEY/ChinookPanel/DataAnalysis/Genepop/allCombined_FST_union.txt", "wb")
-write.table(allCombined_FST_union_FST,outputFile,quote=FALSE,row.names=FALSE,col.names=TRUE,eol="\n")
-close(outputFile)
-
